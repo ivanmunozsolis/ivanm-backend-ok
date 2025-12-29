@@ -1,4 +1,16 @@
+import fetch from "node-fetch";
+
 export default async function handler(req, res) {
+
+  // ✅ HEADERS CORS (ESTO ES LO QUE FALTABA)
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   try {
     const preference = {
       items: [
@@ -9,9 +21,6 @@ export default async function handler(req, res) {
           unit_price: 12
         }
       ],
-      payer: {
-        email: "comprador@demo.com"
-      },
       back_urls: {
         success: "https://ivanmunozsolis.github.io/pack---musica/success.html?status=approved",
         failure: "https://ivanmunozsolis.github.io/pack---musica/success.html?status=failure",
@@ -25,7 +34,7 @@ export default async function handler(req, res) {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+          "Authorization": `Bearer ${process.env.MP_ACCESS_TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(preference)
