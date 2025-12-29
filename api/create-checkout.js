@@ -1,8 +1,6 @@
-import fetch from "node-fetch";
-
 export default async function handler(req, res) {
 
-  // ✅ HEADERS CORS (ESTO ES LO QUE FALTABA)
+  // ✅ CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -12,6 +10,10 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (!process.env.MP_ACCESS_TOKEN) {
+      throw new Error("MP_ACCESS_TOKEN no definido");
+    }
+
     const preference = {
       items: [
         {
@@ -34,7 +36,7 @@ export default async function handler(req, res) {
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(preference)
@@ -48,9 +50,10 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("ERROR BACKEND:", error.message);
+
     return res.status(500).json({
-      error: "Error creando el checkout"
+      error: error.message
     });
   }
 }
