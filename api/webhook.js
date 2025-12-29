@@ -1,17 +1,35 @@
+import crypto from "crypto";
 import fetch from "node-fetch";
 
 export default async function handler(req, res) {
   try {
-    const topic = req.query.topic || req.query.type;
-    const id = req.query.id || req.query["data.id"];
+    const secret = process.env.MP_WEBHOOK_SECRET;
 
-    if (topic !== "payment") {
-      return res.status(200).send("Evento ignorado");
+    const signature = req.headers["x-signature"];
+    const requestId = req.headers["x-request-id"];
+
+    if (!signature || !requestId) {
+      return res.status(400).send("Missing headers");
     }
 
-    // Consultar pago a Mercado Pago
-    const paymentResponse = await fetch(
-      `https://api.mercadopago.com/v1/payments/${id}`,
+    const body = JSON.stringify(req.body);
+
+    const hmac = crypto.createHmac("sha256", secret);
+    hmac.update(`${requestId}.${body}`);
+    const expectedSignature = hmac.digest("hex");
+
+    if (signature !== expectedSignature) {
+      return res.status(401).send("Invalid signature");
+    }
+
+    // 👉 Obtener pago real
+    const paymentId = req.body?.data?.id;
+    if (!paymentId) {
+      return res.status(200).send("No payment ID");
+    }
+
+    const response = await fetch(
+      `https://api.mercadopago.com/v1/payments/${paymentId}`,
       {
         headers: {
           Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
@@ -19,20 +37,16 @@ export default async function handler(req, res) {
       }
     );
 
-    const payment = await paymentResponse.json();
+    const payment = await response.json();
 
     if (payment.status === "approved") {
-      console.log("✅ Pago aprobado:", payment.id);
-
-      // AQUÍ luego podremos:
-      // - guardar el pago
-      // - habilitar descarga
-      // - enviar correo
+      console.log("✅ PAGO APROBADO REAL:", payment.id);
     }
 
-    return res.status(200).send("OK");
+    return res.status(200).json({ received: true });
+
   } catch (error) {
-    console.error("❌ Error webhook:", error);
+    console.error("❌ WEBHOOK ERROR:", error);
     return res.status(500).send("Webhook error");
   }
 }
