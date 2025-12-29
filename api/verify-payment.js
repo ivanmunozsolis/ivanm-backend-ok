@@ -1,41 +1,31 @@
-const { createClient } = require("@supabase/supabase-js");
+import fetch from "node-fetch";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   try {
-    if (req.method !== "GET") {
-      return res.status(405).json({ error: "Method not allowed" });
+    const { payment_id } = req.query;
+
+    if (!payment_id) {
+      return res.status(400).json({ approved: false });
     }
 
-    const { token } = req.query;
+    const response = await fetch(
+      `https://api.mercadopago.com/v1/payments/${payment_id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`
+        }
+      }
+    );
 
-    if (!token) {
-      return res.status(400).json({ error: "Token requerido" });
+    const data = await response.json();
+
+    if (data.status === "approved") {
+      return res.status(200).json({ approved: true });
     }
 
-    const { data, error } = await supabase
-      .from("payments")
-      .select("*")
-      .eq("token", token)
-      .eq("paid", true)
-      .single();
+    return res.status(200).json({ approved: false });
 
-    if (error || !data) {
-      return res.status(200).json({ valid: false });
-    }
-
-    return res.status(200).json({
-      valid: true,
-      downloadUrl: data.download_url,
-    });
-  } catch (err) {
-    return res.status(500).json({
-      error: "Server error",
-      details: err.message,
-    });
+  } catch (error) {
+    return res.status(200).json({ approved: false });
   }
-};
+}
