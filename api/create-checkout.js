@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 export default async function handler(req, res) {
   try {
     const preference = {
@@ -11,6 +9,9 @@ export default async function handler(req, res) {
           unit_price: 12
         }
       ],
+      payer: {
+        email: "comprador@demo.com"
+      },
       back_urls: {
         success: "https://ivanmunozsolis.github.io/pack---musica/success.html?status=approved",
         failure: "https://ivanmunozsolis.github.io/pack---musica/success.html?status=failure",
@@ -24,7 +25,7 @@ export default async function handler(req, res) {
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+          Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(preference)
@@ -38,6 +39,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
+    console.error(error);
     return res.status(500).json({
       error: "Error creando el checkout"
     });
