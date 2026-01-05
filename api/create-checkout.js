@@ -20,7 +20,7 @@ export default async function handler(req, res) {
           title: "Pack Musical Profesional",
           quantity: 1,
           currency_id: "PEN",
-          unit_price: 1
+          unit_price: 5
         }
       ],
       back_urls: {
